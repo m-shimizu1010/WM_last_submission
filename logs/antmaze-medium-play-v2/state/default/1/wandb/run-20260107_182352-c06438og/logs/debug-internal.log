@@ -1,0 +1,8 @@
+{"time":"2026-01-07T18:23:52.304369141+09:00","level":"INFO","msg":"stream: starting","core version":"0.23.1"}
+{"time":"2026-01-07T18:23:52.669017891+09:00","level":"INFO","msg":"stream: created new stream","id":"c06438og"}
+{"time":"2026-01-07T18:23:52.66912528+09:00","level":"INFO","msg":"stream: started","id":"c06438og"}
+{"time":"2026-01-07T18:23:52.669220624+09:00","level":"INFO","msg":"handler: started","stream_id":"c06438og"}
+{"time":"2026-01-07T18:23:52.669223619+09:00","level":"INFO","msg":"sender: started","stream_id":"c06438og"}
+{"time":"2026-01-07T18:23:52.669291035+09:00","level":"INFO","msg":"writer: started","stream_id":"c06438og"}
+{"time":"2026-01-07T18:23:52.82533574+09:00","level":"ERROR","msg":"HTTP error","status":404,"method":"POST","url":"https://api.wandb.ai/graphql"}
+{"time":"2026-01-07T18:23:52.825503137+09:00","level":"ERROR","msg":"runupserter: failed to init run","error":"returned error 404: {\"data\":{\"upsertBucket\":null},\"errors\":[{\"message\":\"project not found\",\"path\":[\"upsertBucket\"]}]}"}

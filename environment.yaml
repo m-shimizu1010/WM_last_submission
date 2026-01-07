@@ -1,0 +1,25 @@
+name: fowm
+dependencies:
+  - python=3.8.16
+  - pytorch::pytorch=1.13.1
+  - pytorch::torchvision=0.14.1
+  - nvidia::cudatoolkit=11.7
+  - conda-forge::pip=22.3.1
+  - conda-forge::setuptools=65.5.1
+  - conda-forge::wheel=0.37.1
+  - conda-forge::ittapi
+  - pip:
+    - cython==0.29.33
+    - mujoco==2.3.2
+    - mujoco-py==2.1.2.14
+    - termcolor
+    - omegaconf
+    - gym==0.21.0
+    - dm-env==1.6
+    - pandas
+    - wandb
+    - moviepy
+    - imageio
+    - gdown
+    - -e benchmarks/d4rl
+    - -e benchmarks/simxarm
