@@ -64,11 +64,16 @@ num_q: 5
 mlp_dim: 512
 latent_dim: 50
 
+# visual observation settings (for pixels/all modality)
+frame_stack: 1
+num_channels: 32
+img_size: 84
+
 # MODEM
 modem: false
 
 # wandb
-use_wandb: true
+use_wandb: false
 wandb_project: FOWM
 wandb_entity: fyhmer  # insert your own
 
@@ -81,6 +86,6 @@ notes: ""
 eval_freq: 20000
 save_freq: 50000
 eval_episodes: 20
-save_video: false
+save_video: true
 save_model: false
 save_buffer: false

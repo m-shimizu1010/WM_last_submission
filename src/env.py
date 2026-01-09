@@ -318,9 +318,13 @@ def make_xarm_env(cfg):
                        seed=cfg.seed)
     # Convenience
     if obs_mode == 'all':
+        # OmegaConfの構造フラグを一時的に無効化して辞書を設定可能にする
+        from omegaconf import OmegaConf
+        OmegaConf.set_struct(cfg, False)
         cfg.obs_shape = {}
         for k in env.observation_space:
             cfg.obs_shape[k] = tuple(int(x) for x in env.observation_space[k].shape)
+        OmegaConf.set_struct(cfg, True)
     else:
         cfg.obs_shape = tuple(int(x) for x in env.observation_space.shape)
     cfg.action_shape = tuple(int(x) for x in env.action_space.shape)
