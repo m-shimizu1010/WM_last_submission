@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from termcolor import colored
 from omegaconf import OmegaConf
+import imageio
 
 CONSOLE_FORMAT = [('episode', 'E', 'int'), ('phase', 'P', 'str'), ('step', 'S', 'ratio'), ('episode_reward', 'R', 'float'),
                   ('total_time', 'T', 'time')]
@@ -55,7 +56,7 @@ class VideoRecorder:
     """Utility class for logging evaluation videos."""
 
     def __init__(self, root_dir, wandb, render_size=384, fps=15):
-        self.save_dir = (root_dir / 'eval_video') if root_dir else None
+        self.save_dir = make_dir(root_dir / 'eval_video') if root_dir else None
         self._wandb = wandb
         self.render_size = render_size
         self.fps = fps
@@ -65,7 +66,7 @@ class VideoRecorder:
 
     def init(self, env, enabled=True):
         self.frames = []
-        self.enabled = self.save_dir and self._wandb and enabled
+        self.enabled = self.save_dir is not None and enabled
         try:
             env_name = env.unwrapped.spec.id
         except:
@@ -84,8 +85,11 @@ class VideoRecorder:
 
     def save(self, step):
         if self.enabled:
-            frames = np.stack(self.frames).transpose(0, 3, 1, 2)
-            self._wandb.log({'eval_video': self._wandb.Video(frames, fps=self.fps, format='mp4')}, step=step)
+            path = self.save_dir / f'{step}.mp4'
+            imageio.mimsave(str(path), self.frames, fps=self.fps)
+            if self._wandb is not None:
+                frames = np.stack(self.frames).transpose(0, 3, 1, 2)
+                self._wandb.log({'eval_video': self._wandb.Video(frames, fps=self.fps, format='mp4')}, step=step)
 
 
 class Logger(object):
@@ -124,7 +128,7 @@ class Logger(object):
             except:
                 print(colored('Warning: failed to init wandb. Logs will be saved locally.', 'yellow'), attrs=['bold'])
                 self._wandb = None
-        self._video = VideoRecorder(log_dir, self._wandb) if self._wandb and cfg.save_video else None
+        self._video = VideoRecorder(log_dir, self._wandb, fps=15) if cfg.save_video else None
 
     @property
     def video(self):

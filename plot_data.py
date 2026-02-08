@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ログファイルを読み込む
-task_name = 'hopper-medium-v2'
-modality = 'state'
+task_name = 'xarm_lift'
+modality = 'all'
 df = pd.read_csv(f'logs/{task_name}/{modality}/default/1/eval.log')
 
 # 学習曲線をプロット

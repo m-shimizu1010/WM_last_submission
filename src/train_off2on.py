@@ -97,10 +97,6 @@ def train(cfg):
 
         if step >= cfg.offline_steps:
             is_offline = False
-            if not quantized:
-                print("Switching to online and quantizing agent...")
-                agent.quantize()
-                quantized = True
 
             # Collect trajectory
             obs = env.reset()
