@@ -69,6 +69,23 @@ The relationship between configuration parameters (e.g., in `cfgs/tasks/xarm_lif
 
 **Note**: The console step (**S**) shows the **internal update steps**. The actual environment steps (env_step) used for evaluation and logging frequency are `S × action_repeat`. For example, if `S` reaches 50,000 and `action_repeat` is 2, the total environment steps will be 100,000.
 
+## Running Multiple Experiments & Plotting
+
+To run experiments for multiple tasks and seeds (e.g., `xarm_lift` and `xarm_push` with 5 seeds each) and generate aggregated learning curves, you can use the provided utility scripts.
+
+### 1. Run all experiments
+Executing the following script will run 10 training sessions sequentially (2 tasks x 5 seeds). It automatically sets up the necessary environment variables for MuJoCo and generates a plot once all training is complete.
+```bash
+./scripts/run_experiments.sh
+```
+
+### 2. Manual Plotting
+If you already have log data in the `logs/` directory and want to generate or update the plot (mean reward with standard deviation area), run:
+```bash
+python plot_results.py
+```
+The result will be saved as `learning_curves.pdf`.
+
 ## Citation
 If you find our work useful in your research, please consider citing with the following BibTeX:
 ```
