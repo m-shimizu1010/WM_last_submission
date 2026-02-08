@@ -86,6 +86,7 @@ def train(cfg):
 
     step = 0
     last_log_step, last_save_step = 0, 0
+    quantized = False
     print("Training starts!")
     while step < cfg.train_steps:
 
@@ -96,6 +97,10 @@ def train(cfg):
 
         if step >= cfg.offline_steps:
             is_offline = False
+            if not quantized:
+                print("Switching to online and quantizing agent...")
+                agent.quantize()
+                quantized = True
 
             # Collect trajectory
             obs = env.reset()
@@ -138,7 +143,8 @@ def train(cfg):
             'step': _step,
             'env_step': env_step,
             'total_time': time.time() - start_time,
-            'is_offline': float(is_offline)
+            'is_offline': float(is_offline),
+            'phase': 'Off' if is_offline else 'On',
         }
         train_metrics.update(common_metrics)
         train_metrics.update(rollout_metrics)

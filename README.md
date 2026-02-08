@@ -45,6 +45,30 @@ You can choose `xarm_lift` or `xarm_push` as `task` and use `dataset_dir` to spe
 
 The training script supports both local logging as well as cloud-based logging with [Weights & Biases](https://wandb.ai). To use W&B, provide a key by setting the environment variable `WANDB_API_KEY=<YOUR_KEY>` and add your W&B project and entity details to `cfgs/config.yaml`.
 
+## Monitoring Training
+
+### Console Output
+During training, the console displays progress in the following format:
+`train   E: 10   P: Off   S: 1000/50000   R: 15.5   T: 0:05:21`
+
+- **E (Episode)**: Number of completed episodes.
+- **P (Phase)**: Current training phase (`Off` for Offline, `On` for Online).
+- **S (Step)**: Progress ratio shown as `current_steps / total_steps`.
+- **R (Reward)**: Total reward obtained in the current/latest episode (or average).
+- **T (Time)**: Elapsed time since the start of training.
+
+### Configuration vs. Output
+The relationship between configuration parameters (e.g., in `cfgs/tasks/xarm_lift.yaml`) and the console output is as follows:
+
+| Parameter | Console Correlation | Description |
+| :--- | :--- | :--- |
+| `train_steps` | Denominator of `S` | Total number of internal model update steps. |
+| `action_repeat` | Environment multiplier | Number of environment steps per agent action. |
+| `offline_steps` | Phase transition | Threshold (in steps) to switch from `Off` to `On` phase. |
+| `eval_freq` | Frequency of `green` logs | Interval (in environment steps) for evaluation. |
+
+**Note**: The console step (**S**) shows the **internal update steps**. The actual environment steps (env_step) used for evaluation and logging frequency are `S × action_repeat`. For example, if `S` reaches 50,000 and `action_repeat` is 2, the total environment steps will be 100,000.
+
 ## Citation
 If you find our work useful in your research, please consider citing with the following BibTeX:
 ```

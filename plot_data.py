@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # ログファイルを読み込む
-task_name = 'antmaze-medium-play-v2'
+task_name = 'hopper-medium-v2'
 modality = 'state'
 df = pd.read_csv(f'logs/{task_name}/{modality}/default/1/eval.log')
 

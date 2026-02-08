@@ -7,6 +7,8 @@ from dm_env import StepType, specs
 import gym
 import warnings
 import yaml
+from omegaconf import OmegaConf
+
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -317,18 +319,16 @@ def make_xarm_env(cfg):
                        frame_stack=cfg.get("frame_stack", 1),
                        seed=cfg.seed)
     # Convenience
+    OmegaConf.set_struct(cfg, False)
     if obs_mode == 'all':
-        # OmegaConfの構造フラグを一時的に無効化して辞書を設定可能にする
-        from omegaconf import OmegaConf
-        OmegaConf.set_struct(cfg, False)
         cfg.obs_shape = {}
         for k in env.observation_space:
             cfg.obs_shape[k] = tuple(int(x) for x in env.observation_space[k].shape)
-        OmegaConf.set_struct(cfg, True)
     else:
         cfg.obs_shape = tuple(int(x) for x in env.observation_space.shape)
     cfg.action_shape = tuple(int(x) for x in env.action_space.shape)
     cfg.action_dim = env.action_space.shape[0]
+    OmegaConf.set_struct(cfg, True)
 
     for k in ['obs_shape', 'action_shape', 'action_dim']:
         print(k, getattr(cfg, k))
@@ -343,9 +343,11 @@ def make_d4rl_env(cfg):
     env = gym.wrappers.RescaleAction(env, -1, 1)
     env = gym.wrappers.ClipAction(env)
 
+    OmegaConf.set_struct(cfg, False)
     cfg.obs_shape = tuple(int(x) for x in env.observation_space.shape)
     cfg.action_shape = tuple(int(x) for x in env.action_space.shape)
     cfg.action_dim = env.action_space.shape[0]
+    OmegaConf.set_struct(cfg, True)
 
     return env
 
@@ -422,9 +424,11 @@ def make_legged_env(cfg):
 
     env = LeggedEnvWrapper(env)
 
+    OmegaConf.set_struct(cfg, False)
     cfg.obs_shape = tuple(int(x) for x in env.observation_space.shape)
     cfg.action_shape = tuple(int(x) for x in env.action_space.shape)
     cfg.action_dim = env.action_space.shape[0]
+    OmegaConf.set_struct(cfg, True)
 
     return env
 

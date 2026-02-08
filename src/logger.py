@@ -6,7 +6,7 @@ import pandas as pd
 from termcolor import colored
 from omegaconf import OmegaConf
 
-CONSOLE_FORMAT = [('episode', 'E', 'int'), ('env_step', 'S', 'int'), ('episode_reward', 'R', 'float'),
+CONSOLE_FORMAT = [('episode', 'E', 'int'), ('phase', 'P', 'str'), ('step', 'S', 'ratio'), ('episode_reward', 'R', 'float'),
                   ('total_time', 'T', 'time')]
 AGENT_METRICS = ['consistency_loss', 'reward_loss', 'value_loss', 'total_loss', 'weighted_loss', 'pi_loss', 'grad_norm']
 
@@ -170,6 +170,10 @@ class Logger(object):
         elif ty == 'time':
             value = str(datetime.timedelta(seconds=int(value)))
             return f'{colored(key + ":", "grey")} {value}'
+        elif ty == 'str':
+            return f'{colored(key + ":", "grey")} {str(value)}'
+        elif ty == 'ratio':
+            return f'{colored(key + ":", "grey")} {int(value):,}/{int(self._cfg.train_steps):,}'
         else:
             raise f'invalid log format type: {ty}'
 

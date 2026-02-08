@@ -77,6 +77,7 @@ class TDMPC():
     def __init__(self, cfg):
         self.cfg = cfg
         self.device = torch.device('cuda')
+        self.finetuning = True
         self.std = h.linear_schedule(cfg.std_schedule, 0)
         self.model = TOLD(cfg).cuda()
         self.model_target = deepcopy(self.model)
@@ -101,6 +102,19 @@ class TDMPC():
         d = torch.load(fp)
         self.model.load_state_dict(d['model'])
         self.model_target.load_state_dict(d['model_target'])
+
+    def quantize(self):
+        """Quantize the model to reduce memory usage and potentially speed up inference."""
+        self.device = torch.device('cpu')
+        self.model.to(self.device)
+        self.model_target.to(self.device)
+        self.model = torch.quantization.quantize_dynamic(
+            self.model, {torch.nn.Linear}, dtype=torch.qint8
+        )
+        self.model_target = torch.quantization.quantize_dynamic(
+            self.model_target, {torch.nn.Linear}, dtype=torch.qint8
+        )
+        self.finetuning = False
 
     @torch.no_grad()
     def act(self, obs, t0=False, eval_mode=False, step=None):
@@ -233,6 +247,8 @@ class TDMPC():
 
     def update(self, replay_buffer, step, demo_buffer=None):
         """Main update function. Corresponds to one iteration of the model learning."""
+        if not self.finetuning:
+            return {}
 
         if demo_buffer is not None:
             # Update oversampling ratio
