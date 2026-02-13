@@ -63,6 +63,10 @@ enc_dim: 256
 num_q: 5
 mlp_dim: 512
 latent_dim: 50
+freeze_encoder: false
+use_lora: false
+lora_rank: 8
+lora_alpha: 16
 
 # visual observation settings (for pixels/all modality)
 frame_stack: 1
@@ -89,3 +93,4 @@ eval_episodes: 20
 save_video: true
 save_model: false
 save_buffer: false
+domain_shift: 'baseline' # baseline, heavy_load, high_friction, mix_severe

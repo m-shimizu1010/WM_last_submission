@@ -444,3 +444,57 @@ def make_env(cfg):
     else:
         cfg.domain = "d4rl"
         return make_d4rl_env(cfg)
+
+
+def apply_domain_shift(env, condition):
+    """
+    Apply domain shift to the environment.
+    Supported conditions: baseline, heavy_load, high_friction, mix_severe
+    """
+    if condition == 'baseline':
+        return
+
+    # simxarm environments are wrapped in several layers
+    # SimXarmWrapper (simxarm/__init__.py) -> TimeLimit -> Lift/Push (simxarm/task/lift.py etc)
+    # The base class Base (simxarm/task/base.py) has self.sim
+    try:
+        # Navigate through wrappers to get to the underlying Mujoco sim
+        curr_env = env
+        while not hasattr(curr_env, 'sim') and hasattr(curr_env, 'env'):
+            curr_env = curr_env.env
+        
+        if not hasattr(curr_env, 'sim'):
+            print(f"Warning: Could not find 'sim' in env to apply domain shift.")
+            return
+
+        sim = curr_env.sim
+        model = sim.model
+        
+        print(f"Applying domain shift: {condition}")
+        
+        if condition in ['heavy_load', 'mix_severe']:
+            # Heavy Load: 物体の質量1.5~2.0倍に増加
+            # In xarm_lift/xarm_push, the object is named 'object'
+            try:
+                body_id = model.body_name2id('object')
+                old_mass = model.body_mass[body_id]
+                model.body_mass[body_id] *= 2.0 # 2.0x increase
+                print(f"  - Modified 'object' body mass: {old_mass} -> {model.body_mass[body_id]}")
+            except Exception as e:
+                print(f"  - Error modifying mass: {e}")
+
+        if condition in ['high_friction', 'mix_severe']:
+            # High Friction: 床・物体の摩擦係数を大幅に変更
+            # Geoms: floorgeom0, tablegeom0, object0
+            target_geoms = ['floorgeom0', 'tablegeom0', 'object0']
+            for geom_name in target_geoms:
+                try:
+                    geom_id = model.geom_name2id(geom_name)
+                    old_friction = model.geom_friction[geom_id].copy()
+                    model.geom_friction[geom_id] = 2.0 # Substantially increase friction
+                    print(f"  - Modified '{geom_name}' friction: {old_friction} -> {model.geom_friction[geom_id]}")
+                except Exception as e:
+                    print(f"  - Error modifying friction for {geom_name}: {e}")
+                    
+    except Exception as e:
+        print(f"Error applying domain shift: {e}")

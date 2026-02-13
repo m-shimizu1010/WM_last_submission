@@ -3,7 +3,7 @@
 # Configuration
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/takatoishii/.mujoco/mujoco210/bin:/usr/lib/nvidia
 TASKS=("xarm_lift" "xarm_push")
-SEEDS=(1 2 3 4 5)
+SEEDS=(1 2 3)
 
 for task in "${TASKS[@]}"; do
     for seed in "${SEEDS[@]}"; do

@@ -58,23 +58,38 @@ def evaluate(env, agent, num_episodes, step, env_step, video):
     }
 
 
-def train(cfg):
-    """Training script for TD-MPC. Requires a CUDA-enabled device."""
+def train_online(cfg):
+    """Training script for online fine-tuning with TD-MPC. Requires a CUDA-enabled device."""
     assert torch.cuda.is_available()
     set_seed(cfg.seed)
     work_dir = Path().cwd() / __LOGS__ / cfg.task / cfg.modality / cfg.exp_name / str(cfg.seed)
+    
     print("Making env...")
     env = make_env(cfg)
+    
+    # Apply domain shift right away
+    print(f"Applying domain shift: {cfg.domain_shift}")
+    apply_domain_shift(env, cfg.domain_shift)
+    
     print("Instantiating agent...")
     agent = TDMPC(cfg)
+    
+    # Load pretrained model
     if cfg.pretrained_model_path:
         print(f"Loading pretrained model from `{cfg.pretrained_model_path}`...")
         agent.load(cfg.pretrained_model_path)
-    print("Loading dataset...")
+    else:
+        print("Warning: No pretrained model path provided for online fine-tuning!")
+    
+    # Apply adaptations (LoRA, freezing, optimizer re-init)
+    agent.apply_adaptation()
+        
+    print("Loading dataset for balanced sampling or replay baseline...")
     dataset, reward_normalizer = get_dataset_dict(cfg, env, return_reward_normalizer=True)
     offline_buffer = ReplayBuffer(cfg, dataset=dataset)
     del dataset
     gc.collect()
+    
     if cfg.balanced_sampling:
         buffer = ReplayBuffer(deepcopy(cfg))
     else:
@@ -86,59 +101,41 @@ def train(cfg):
 
     step = 0
     last_log_step, last_save_step = 0, 0
-    print("Training starts!")
-    domain_shift_applied = False
-    if cfg.offline_steps == 0:
-        agent.apply_adaptation()
-
+    print("Online Fine-tuning starts!")
+    
     while step < cfg.train_steps:
-
-        is_offline = True
-        num_updates = cfg.episode_length
-        _step = step + num_updates
-        rollout_metrics = {}
-
-        if step >= cfg.offline_steps:
-            if not domain_shift_applied:
-                apply_domain_shift(env, cfg.domain_shift)
-                if cfg.offline_steps > 0:
-                    agent.apply_adaptation()
-                domain_shift_applied = True
-            is_offline = False
-
-            # Collect trajectory
-            obs = env.reset()
-            episode = Episode(cfg, obs)
-            success = False
-            while not episode.done:
-                action = agent.act(obs, step=step, t0=episode.first)
-                obs, reward, done, info = env.step(action.cpu().numpy())
-                reward = reward_normalizer(reward)
-                mask = 1.0 if (not done or "TimeLimit.truncated" in info) else 0.0
-                success = info.get('success', False)
-                episode += (obs, action, reward, done, mask, success)
-            assert len(episode) <= cfg.episode_length
-            buffer += episode
-            episode_idx += 1
-            rollout_metrics = {
-                'episode_reward': episode.cumulative_reward,
-                'episode_success': float(success),
-                'episode_length': len(episode)
-            }
-            num_updates = len(episode) * cfg.utd
-            _step = min(step + len(episode), cfg.train_steps)
+        # Collect trajectory
+        obs = env.reset()
+        episode = Episode(cfg, obs)
+        success = False
+        while not episode.done:
+            action = agent.act(obs, step=step, t0=episode.first)
+            obs, reward, done, info = env.step(action.cpu().numpy())
+            reward = reward_normalizer(reward)
+            mask = 1.0 if (not done or "TimeLimit.truncated" in info) else 0.0
+            success = info.get('success', False)
+            episode += (obs, action, reward, done, mask, success)
+        
+        assert len(episode) <= cfg.episode_length
+        buffer += episode
+        episode_idx += 1
+        
+        rollout_metrics = {
+            'episode_reward': episode.cumulative_reward,
+            'episode_success': float(success),
+            'episode_length': len(episode)
+        }
+        
+        num_updates = len(episode) * cfg.utd
+        _step = min(step + len(episode), cfg.train_steps)
 
         # Update model
         train_metrics = {}
-        if is_offline:
-            for i in range(num_updates):
-                train_metrics.update(agent.update(offline_buffer, step + i))
-        else:
-            for i in range(num_updates):
-                train_metrics.update(
-                    agent.update(buffer, step + i // cfg.utd,
-                                 demo_buffer=offline_buffer if cfg.balanced_sampling else None)
-                )
+        for i in range(num_updates):
+            train_metrics.update(
+                agent.update(buffer, step + i // cfg.utd,
+                             demo_buffer=offline_buffer if cfg.balanced_sampling else None)
+            )
 
         # Log training metrics
         env_step = int(_step * cfg.action_repeat)
@@ -147,8 +144,8 @@ def train(cfg):
             'step': _step,
             'env_step': env_step,
             'total_time': time.time() - start_time,
-            'is_offline': float(is_offline),
-            'phase': 'Off' if is_offline else 'On',
+            'is_offline': 0.0,
+            'phase': 'On',
         }
         train_metrics.update(common_metrics)
         train_metrics.update(rollout_metrics)
@@ -169,15 +166,11 @@ def train(cfg):
             print(f"Model has been checkpointed at step {env_step}")
             last_save_step = env_step - env_step % cfg.save_freq
 
-        if cfg.save_model and is_offline and _step >= cfg.offline_steps:
-            # save the model after offline training
-            L.save_model(agent, identifier="offline")
-
         step = _step
 
     L.finish(agent, buffer)
-    print('Training completed successfully')
+    print('Online training completed successfully')
 
 
 if __name__ == '__main__':
-    train(parse_cfg(Path().cwd() / __CONFIG__))
+    train_online(parse_cfg(Path().cwd() / __CONFIG__))

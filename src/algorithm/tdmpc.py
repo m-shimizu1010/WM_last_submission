@@ -83,10 +83,36 @@ class TDMPC():
         self.model_target = deepcopy(self.model)
         self.optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
         self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr)
-        self.bc_optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
         self.model.eval()
         self.model_target.eval()
         self.batch_size = cfg.batch_size
+
+    def apply_adaptation(self):
+        """Apply LoRA and/or encoder freezing for fine-tuning."""
+        print(f"Applying adaptation: freeze_encoder={getattr(self.cfg, 'freeze_encoder', False)}, use_lora={getattr(self.cfg, 'use_lora', False)}")
+        
+        # 1. Apply LoRA if enabled
+        if getattr(self.cfg, 'use_lora', False):
+            h.apply_lora(self.model._dynamics, self.cfg.lora_rank, self.cfg.lora_alpha)
+            h.apply_lora(self.model._reward, self.cfg.lora_rank, self.cfg.lora_alpha)
+            self.model.cuda() # Move new LoRA parameters to GPU
+            
+        # 2. Re-create target network to match architecture (including LoRA if applied)
+        self.model_target = deepcopy(self.model)
+        
+        # 3. Freeze encoder if enabled
+        if getattr(self.cfg, 'freeze_encoder', False):
+            h.set_requires_grad(self.model._encoder, False)
+            
+        # 4. Re-initialize optimizers to respect requires_grad and include new LoRA parameters
+        self.optim = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.cfg.lr)
+        self.pi_optim = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model._pi.parameters()), lr=self.cfg.lr)
+        
+        # Note: bc_optim was used in original code, adding it back for consistency if needed
+        self.bc_optim = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.cfg.lr)
+        
+        self.model.eval()
+        self.model_target.eval()
 
     def state_dict(self):
         """Retrieve state dict of TOLD model, including slow-moving target network."""

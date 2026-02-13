@@ -6,6 +6,28 @@ Official PyTorch implementation of [Finetuning Offline World Models in the Real 
 
 ![Framework](figures/teaser.png)
 
+## 主な変更点 (Major Changes)
+
+本リポジトリは [yunhaif/fowm](https://github.com/yunhaif/fowm) をベースに、オンライン・ファインチューニングの効率化と実験の公平性を向上させるための以下の機能を追加しています。
+
+1. **アーキテクチャの拡張**
+   - **Encoder Freezing**: `freeze_encoder` オプションにより、ファインチューニング中にエンコーダの重みを固定可能です。
+   - **LoRA (Low-Rank Adaptation)**: Dynamics モデルと Reward モデルに対して LoRA を適用可能です。元の重みを固定したまま、低ランク行列のみを学習することで効率的な適応を実現します。
+
+2. **実験パイプラインの分離 (2-Stage Training)**
+   - **Stage 1 (Offline Pretraining)**: `src/train_offline.py` により、オフラインデータセットのみを用いてベースモデルを学習・保存します。
+   - **Stage 2 (Online Fine-tuning)**: `src/train_online.py` により、保存されたベースモデルを読み込み、即座にドメインシフト環境でのオンライン学習を開始します。これにより、全手法で同一の初期状態からの公平な比較が可能になりました。
+
+3. **動的なモデル適応 (Dynamic Adaptation)**
+   - `TDMPC.apply_adaptation()` メソッドの実装により、事前学習済みの標準モデルに対して、オンラインフェーズ開始のタイミングで動的に LoRA の適用やエンコーダの固定を行えるようになりました。
+
+4. **実験の自動化と可視化**
+   - **run_experiments.py**: 4つのドメインシフト（Baseline, Heavy Load, High Friction, Mix Severe）と3つの手法（Full-FT, Encoder-Frozen, Dynamics-LoRA）の計12パターンの実験を自動実行します。
+   - **plot_results.py**: 複数手法の学習曲線を1つのグラフにプロットし、シード間の平均と標準偏差（影付きエリア）を可視化します。
+
+5. **環境構築の改善**
+   - `mujoco_py` の `LD_LIBRARY_PATH` に関するエラーを自動的に解決する処理を追加しました。
+
 ## Installation
 
 

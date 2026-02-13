@@ -78,6 +78,42 @@ def set_requires_grad(net, value):
         param.requires_grad_(value)
 
 
+class LoRALinear(nn.Module):
+    """Low-Rank Adaptation (LoRA) for a linear layer."""
+
+    def __init__(self, linear, rank=8, alpha=16):
+        super().__init__()
+        self.linear = linear
+        self.rank = rank
+        self.alpha = alpha
+        self.scaling = alpha / rank
+
+        in_features = linear.in_features
+        out_features = linear.out_features
+
+        self.lora_A = nn.Parameter(torch.zeros((rank, in_features)))
+        self.lora_B = nn.Parameter(torch.zeros((out_features, rank)))
+
+        # Initialize LoRA parameters
+        nn.init.kaiming_uniform_(self.lora_A, a=np.sqrt(5))
+        nn.init.zeros_(self.lora_B)
+
+        # Freeze original linear layer
+        set_requires_grad(self.linear, False)
+
+    def forward(self, x):
+        return self.linear(x) + (x @ self.lora_A.t() @ self.lora_B.t()) * self.scaling
+
+
+def apply_lora(module, rank=8, alpha=16):
+    """Recursively replace nn.Linear with LoRALinear in a module."""
+    for name, child in module.named_children():
+        if isinstance(child, nn.Linear):
+            setattr(module, name, LoRALinear(child, rank, alpha))
+        else:
+            apply_lora(child, rank, alpha)
+
+
 class TruncatedNormal(pyd.Normal):
     """Utility class implementing the truncated normal distribution."""
 
