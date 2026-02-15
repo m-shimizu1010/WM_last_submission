@@ -7,6 +7,7 @@ Official PyTorch implementation of [Finetuning Offline World Models in the Real 
 ![Framework](figures/teaser.png)
 
 ## 主な変更点 (Major Changes)
+[最終課題プロジェクトリンク](https://prism.openai.com/?u=3ca79a48-23bf-46b8-834d-870f65a8256c&pg=1&m=main.tex&d=7)
 
 本リポジトリは [yunhaif/fowm](https://github.com/yunhaif/fowm) をベースに、オンライン・ファインチューニングの効率化と実験の公平性を向上させるための以下の機能を追加しています。
 

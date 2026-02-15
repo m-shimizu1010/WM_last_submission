@@ -59,14 +59,15 @@ def plot_method_comparison(task, domain, seeds, methods, modality='all'):
         plt.fill_between(common_steps, mean_reward - std_reward, mean_reward + std_reward, 
                          color=color, alpha=0.15)
         
-    plt.xlabel('Environment Steps', fontsize=12)
-    plt.ylabel('Episode Reward', fontsize=12)
-    plt.title(f'Domain Adaptation: {domain.replace("_", " ").title()} ({task})', fontsize=14)
-    plt.legend(frameon=True, fontsize=10)
+    plt.xlabel('Environment Steps [1e5]', fontsize=25)
+    plt.ylabel('Episode Reward', fontsize=25)
+    # plt.title(f'Domain Adaptation: {domain.replace("_", " ").title()} ({task})', fontsize=20)
+    plt.legend(frameon=True, fontsize=25, facecolor='white', edgecolor='black', framealpha=1)
     plt.grid(True, linestyle='--', alpha=0.6)
     
     # Use scientific notation for x-axis if steps are large
     plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+    plt.tick_params(axis='both', which='major', labelsize=20)
     
     output_file = f'results_{task}_{domain}.pdf'
     plt.tight_layout()
